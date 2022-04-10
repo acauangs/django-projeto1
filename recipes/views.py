@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http.response import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404, render
 
@@ -43,9 +44,17 @@ def search(request):
     if not search_term:
         raise Http404()
 
-    return render(request, 'recipes/pages/search.html', context={
+    recipes = Recipe.objects.filter(
+        # O __icontains serve para que você busque titulos que contem palavras search_term. # noqa: E501
+        Q(title__icontains=search_term) |
+        Q(description__icontains=search_term),
+        # O Q serve como o operador AND, entao vamos pesquisar no titulo and description palavras do Search_term. # noqa: E501
+    )
+    recipes = recipes.order_by('-id')
+    recipes = recipes.filter(is_published=True)
+
+    return render(request, 'recipes/pages/search.html', {
         'page_title': f'Search for "{search_term}"',
-        'search_term': search_term
-
-
+        'search_term': search_term,
+        'recipes': recipes,
     })
